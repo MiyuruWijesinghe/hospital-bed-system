@@ -3,10 +3,15 @@ package main
 import (
 	"hospital/config"
 	"hospital/models"
+	"hospital/routes"
 	"log"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	r := gin.Default()
+
 	config.ConnectDatabase()
 
 	err := config.DB.AutoMigrate(
@@ -22,4 +27,8 @@ func main() {
 	}
 
 	log.Println("✅ Database migrated successfully")
+
+	routes.SetupRoutes(r)
+	log.Println("🚀 Server running on http://localhost:8080")
+	r.Run(":8080")
 }
