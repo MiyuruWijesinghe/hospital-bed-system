@@ -8,13 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetBeds(c *gin.Context) {
-	var beds []models.Bed
-	config.DB.Find(&beds)
-
-	c.JSON(http.StatusOK, beds)
-}
-
 func CreateBed(c *gin.Context) {
 	var bed models.Bed
 
@@ -27,11 +20,39 @@ func CreateBed(c *gin.Context) {
 	c.JSON(http.StatusOK, bed)
 }
 
-func UpdateBedStatus(c *gin.Context) {
-	id := c.Param("id")
+func GetBeds(c *gin.Context) {
+	var beds []models.Bed
+	config.DB.Find(&beds)
+
+	c.JSON(http.StatusOK, beds)
+}
+
+func GetBedByID(c *gin.Context) {
+	bedID := c.Param("bed_id")
 
 	var bed models.Bed
-	if err := config.DB.First(&bed, id).Error; err != nil {
+	if err := config.DB.First(&bed, bedID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Bed not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, bed)
+}
+
+func GetBedsByRoom(c *gin.Context) {
+	roomID := c.Param("room_id")
+
+	var beds []models.Bed
+	config.DB.Where("room_id = ?", roomID).Find(&beds)
+
+	c.JSON(http.StatusOK, beds)
+}
+
+func UpdateBedStatus(c *gin.Context) {
+	bedID := c.Param("bed_id")
+
+	var bed models.Bed
+	if err := config.DB.First(&bed, bedID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Bed not found"})
 		return
 	}
