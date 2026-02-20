@@ -37,5 +37,13 @@ func SetupRoutes(r *gin.Engine) {
 			beds.PUT("/:bed_id/status", controllers.UpdateBedStatus)
 		}
 
+		// Patients
+		patients := hospital.Group("/patients")
+		{
+			patients.GET("/", controllers.GetPatients)
+			patients.GET("/:patient_id", controllers.GetPatientByID)
+			patients.POST("/", controllers.CreatePatient)
+		}
+
 	}
 }
