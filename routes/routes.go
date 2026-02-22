@@ -45,5 +45,13 @@ func SetupRoutes(r *gin.Engine) {
 			patients.POST("/", controllers.CreatePatient)
 		}
 
+		// Admissions
+		admissions := hospital.Group("/admissions")
+		{
+			admissions.GET("/", controllers.GetAdmissions)
+			admissions.GET("/:admission_id", controllers.GetAdmissionByID)
+			admissions.POST("/admit", controllers.AdmitPatient)
+			admissions.PUT("/discharge/:admit_id", controllers.DischargePatient)
+		}
 	}
 }
