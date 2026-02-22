@@ -23,6 +23,8 @@ func AdmitPatient(c *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin() // start transaction
+
 	// Check patient exists
 	var patient models.Patient
 	if err := config.DB.First(&patient, input.PatientID).Error; err != nil {
@@ -30,13 +32,24 @@ func AdmitPatient(c *gin.Context) {
 		return
 	}
 
+	// Prevent duplicate active admission
+	var existing models.Admission
+	if err := tx.Where("patient_id = ? AND status = ?", input.PatientID, "ACTIVE").
+		First(&existing).Error; err == nil {
+
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Patient already admitted"})
+		return
+	}
+
 	// Find first available bed in that ward
 	var bed models.Bed
 
-	err := config.DB.
+	err := tx.
 		Joins("JOIN rooms ON rooms.id = beds.room_id").
 		Where("rooms.ward_id = ?", input.WardID).
 		Where("beds.status = ?", "AVAILABLE").
+		Set("gorm:query_option", "FOR UPDATE"). // row lock
 		First(&bed).Error
 
 	if err != nil {
@@ -51,11 +64,20 @@ func AdmitPatient(c *gin.Context) {
 		Status:    "ACTIVE",
 	}
 
-	config.DB.Create(&admission)
+	if err := tx.Create(&admission).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create admission"})
+		return
+	}
 
 	// Update bed status to OCCUPIED
-	bed.Status = "OCCUPIED"
-	config.DB.Save(&bed)
+	if err := tx.Model(&bed).Update("status", "OCCUPIED").Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update bed"})
+		return
+	}
+
+	tx.Commit() // commit transaction
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":   "Patient admitted successfully",
@@ -68,16 +90,20 @@ func DischargePatient(c *gin.Context) {
 
 	admit_id := c.Param("admit_id")
 
+	tx := config.DB.Begin()
+
 	// Find admission
 	var admission models.Admission
-	if err := config.DB.First(&admission, admit_id).Error; err != nil {
+	if err := tx.First(&admission, admit_id).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusNotFound, gin.H{"error": "Admission not found"})
 		return
 	}
 
 	// Only active admissions can be discharged
 	if admission.Status != "ACTIVE" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Admission already closed"})
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Already discharged"})
 		return
 	}
 
@@ -86,14 +112,14 @@ func DischargePatient(c *gin.Context) {
 	admission.Status = "DISCHARGED"
 	admission.DischargedAt = &now
 
-	config.DB.Save(&admission)
+	tx.Save(&admission)
 
 	// Free bed
 	var bed models.Bed
-	config.DB.First(&bed, admission.BedID)
+	tx.First(&bed, admission.BedID)
+	tx.Model(&bed).Update("status", "CLEANING")
 
-	bed.Status = "CLEANING"
-	config.DB.Save(&bed)
+	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Patient discharged successfully",
