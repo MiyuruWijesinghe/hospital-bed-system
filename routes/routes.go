@@ -13,42 +13,42 @@ func SetupRoutes(r *gin.Engine) {
 		// Wards
 		wards := hospital.Group("/wards")
 		{
-			wards.GET("/", controllers.GetWards)
+			wards.GET("", controllers.GetWards)
 			wards.GET("/:ward_id", controllers.GetWardByID)
-			wards.POST("/", controllers.CreateWard)
+			wards.POST("", controllers.CreateWard)
 		}
 
 		// Rooms
 		rooms := hospital.Group("/rooms")
 		{
-			rooms.GET("/", controllers.GetRooms)
+			rooms.GET("", controllers.GetRooms)
 			rooms.GET("/:room_id", controllers.GetRoomByID)
 			rooms.GET("/ward/:ward_id", controllers.GetRoomsByWard)
-			rooms.POST("/", controllers.CreateRoom)
+			rooms.POST("", controllers.CreateRoom)
 		}
 
 		// Beds
 		beds := hospital.Group("/beds")
 		{
-			beds.GET("/", controllers.GetBeds)
+			beds.GET("", controllers.GetBeds)
 			beds.GET("/:bed_id", controllers.GetBedByID)
 			beds.GET("/room/:room_id", controllers.GetBedsByRoom)
-			beds.POST("/", controllers.CreateBed)
+			beds.POST("", controllers.CreateBed)
 			beds.PUT("/:bed_id/status", controllers.UpdateBedStatus)
 		}
 
 		// Patients
 		patients := hospital.Group("/patients")
 		{
-			patients.GET("/", controllers.GetPatients)
+			patients.GET("", controllers.GetPatients)
 			patients.GET("/:patient_id", controllers.GetPatientByID)
-			patients.POST("/", controllers.CreatePatient)
+			patients.POST("", controllers.CreatePatient)
 		}
 
 		// Admissions
 		admissions := hospital.Group("/admissions")
 		{
-			admissions.GET("/", controllers.GetAdmissions)
+			admissions.GET("", controllers.GetAdmissions)
 			admissions.GET("/:admission_id", controllers.GetAdmissionByID)
 			admissions.POST("/admit", controllers.AdmitPatient)
 			admissions.PUT("/discharge/:admit_id", controllers.DischargePatient)
@@ -57,7 +57,7 @@ func SetupRoutes(r *gin.Engine) {
 		// Dashboard
 		dashboard := hospital.Group("/dashboard")
 		{
-			dashboard.GET("/", controllers.GetDashboard)
+			dashboard.GET("", controllers.GetDashboard)
 		}
 	}
 }
