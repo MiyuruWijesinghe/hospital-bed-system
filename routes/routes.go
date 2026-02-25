@@ -16,6 +16,8 @@ func SetupRoutes(r *gin.Engine) {
 			wards.GET("", controllers.GetWards)
 			wards.GET("/:ward_id", controllers.GetWardByID)
 			wards.POST("", controllers.CreateWard)
+			wards.PUT("/:ward_id", controllers.UpdateWard)
+			wards.DELETE("/:ward_id", controllers.DeleteWard)
 		}
 
 		// Rooms
