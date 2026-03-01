@@ -29,7 +29,8 @@ func CreateRoom(c *gin.Context) {
 
 func GetRooms(c *gin.Context) {
 	var rooms []models.Room
-	config.DB.Find(&rooms)
+
+	config.DB.Preload("Ward").Find(&rooms)
 
 	c.JSON(http.StatusOK, rooms)
 }
@@ -53,4 +54,46 @@ func GetRoomsByWard(c *gin.Context) {
 	config.DB.Where("ward_id = ?", wardID).Find(&rooms)
 
 	c.JSON(http.StatusOK, rooms)
+}
+
+func UpdateRoom(c *gin.Context) {
+	id := c.Param("room_id")
+
+	var room models.Room
+
+	if err := config.DB.First(&room, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found"})
+		return
+	}
+
+	// Bind input
+	var input models.Room
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update fields
+	room.WardID = input.WardID
+	room.RoomNumber = input.RoomNumber
+	room.RoomType = input.RoomType
+
+	config.DB.Save(&room)
+
+	c.JSON(http.StatusOK, room)
+}
+
+func DeleteRoom(c *gin.Context) {
+	id := c.Param("room_id")
+
+	var room models.Room
+
+	if err := config.DB.First(&room, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found"})
+		return
+	}
+
+	config.DB.Delete(&room)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Room deleted successfully"})
 }
