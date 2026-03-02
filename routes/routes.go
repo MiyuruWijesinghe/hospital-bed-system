@@ -39,6 +39,8 @@ func SetupRoutes(r *gin.Engine) {
 			beds.GET("/room/:room_id", controllers.GetBedsByRoom)
 			beds.POST("", controllers.CreateBed)
 			beds.PUT("/:bed_id/status", controllers.UpdateBedStatus)
+			beds.PUT("/:bed_id", controllers.UpdateBed)
+			beds.DELETE("/:bed_id", controllers.DeleteBed)
 		}
 
 		// Patients
