@@ -23,7 +23,7 @@ func CreateBed(c *gin.Context) {
 func GetBeds(c *gin.Context) {
 	var beds []models.Bed
 
-	config.DB.Preload("Room").Find(&beds)
+	config.DB.Preload("Room").Preload("Room.Ward").Find(&beds)
 
 	c.JSON(http.StatusOK, beds)
 }
