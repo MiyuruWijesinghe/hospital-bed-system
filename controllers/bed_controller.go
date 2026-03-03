@@ -17,7 +17,7 @@ func CreateBed(c *gin.Context) {
 	}
 
 	config.DB.Create(&bed)
-	c.JSON(http.StatusOK, bed)
+	c.JSON(http.StatusCreated, bed)
 }
 
 func GetBeds(c *gin.Context) {

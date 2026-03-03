@@ -79,7 +79,7 @@ func AdmitPatient(c *gin.Context) {
 
 	tx.Commit() // commit transaction
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusCreated, gin.H{
 		"message":   "Patient admitted successfully",
 		"admission": admission,
 	})

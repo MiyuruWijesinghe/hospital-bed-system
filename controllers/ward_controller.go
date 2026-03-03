@@ -17,7 +17,7 @@ func CreateWard(c *gin.Context) {
 	}
 
 	config.DB.Create(&ward)
-	c.JSON(http.StatusOK, ward)
+	c.JSON(http.StatusCreated, ward)
 }
 
 func GetWards(c *gin.Context) {

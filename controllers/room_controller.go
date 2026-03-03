@@ -24,7 +24,7 @@ func CreateRoom(c *gin.Context) {
 	}
 
 	config.DB.Create(&room)
-	c.JSON(http.StatusOK, room)
+	c.JSON(http.StatusCreated, room)
 }
 
 func GetRooms(c *gin.Context) {
