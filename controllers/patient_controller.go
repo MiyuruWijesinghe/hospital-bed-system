@@ -5,43 +5,12 @@ import (
 	"hospital/models"
 	"hospital/requests"
 	"hospital/responses"
+	"hospital/utils"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
-
-// ======================
-// Calculate Age
-// ======================
-
-func calculateAge(dob time.Time) int {
-	now := time.Now()
-
-	age := now.Year() - dob.Year()
-
-	// If birthday hasn't occurred yet this year
-	if now.YearDay() < dob.YearDay() {
-		age--
-	}
-
-	return age
-}
-
-// ======================
-// Mapper Function
-// ======================
-
-func mapPatientToResponse(p models.Patient) responses.PatientResponse {
-	return responses.PatientResponse{
-		ID:        p.ID,
-		FirstName: p.FirstName,
-		LastName:  p.LastName,
-		Gender:    p.Gender,
-		DOB:       p.DOB.Format("2006-01-02"),
-		Age:       calculateAge(p.DOB),
-	}
-}
 
 func CreatePatient(c *gin.Context) {
 	var req requests.CreatePatientRequest
@@ -66,7 +35,7 @@ func CreatePatient(c *gin.Context) {
 
 	config.DB.Create(&patient)
 
-	response := mapPatientToResponse(patient)
+	response := utils.MapPatientToResponse(patient)
 
 	c.JSON(http.StatusCreated, response)
 }
@@ -78,7 +47,7 @@ func GetPatients(c *gin.Context) {
 	var response []responses.PatientResponse
 
 	for _, p := range patients {
-		response = append(response, mapPatientToResponse(p))
+		response = append(response, utils.MapPatientToResponse(p))
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -94,7 +63,7 @@ func GetPatientByID(c *gin.Context) {
 		return
 	}
 
-	response := mapPatientToResponse(patient)
+	response := utils.MapPatientToResponse(patient)
 
 	c.JSON(http.StatusOK, response)
 }
