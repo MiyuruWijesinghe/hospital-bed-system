@@ -49,6 +49,8 @@ func SetupRoutes(r *gin.Engine) {
 			patients.GET("", controllers.GetPatients)
 			patients.GET("/:patient_id", controllers.GetPatientByID)
 			patients.POST("", controllers.CreatePatient)
+			patients.PUT("/:patient_id", controllers.UpdatePatient)
+			patients.DELETE("/:patient_id", controllers.DeletePatient)
 		}
 
 		// Admissions
