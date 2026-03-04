@@ -14,8 +14,9 @@ import (
 func AdmitPatient(c *gin.Context) {
 
 	var input struct {
-		PatientID uint `json:"patientId"`
-		WardID    uint `json:"wardId"`
+		PatientID uint   `json:"patientId"`
+		BedID     uint   `json:"bedId"`
+		Reason    string `json:"reason"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -27,7 +28,8 @@ func AdmitPatient(c *gin.Context) {
 
 	// Check patient exists
 	var patient models.Patient
-	if err := config.DB.First(&patient, input.PatientID).Error; err != nil {
+	if err := tx.First(&patient, input.PatientID).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusNotFound, gin.H{"error": "Patient not found"})
 		return
 	}
@@ -42,25 +44,25 @@ func AdmitPatient(c *gin.Context) {
 		return
 	}
 
-	// Find first available bed in that ward
+	// check bed
 	var bed models.Bed
+	if err := tx.First(&bed, input.BedID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusNotFound, gin.H{"error": "Bed not found"})
+		return
+	}
 
-	err := tx.
-		Joins("JOIN rooms ON rooms.id = beds.room_id").
-		Where("rooms.ward_id = ?", input.WardID).
-		Where("beds.status = ?", "AVAILABLE").
-		Set("gorm:query_option", "FOR UPDATE"). // row lock
-		First(&bed).Error
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No available beds in this ward"})
+	if bed.Status != "AVAILABLE" {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bed is not available"})
 		return
 	}
 
 	// Create admission
 	admission := models.Admission{
 		PatientID: input.PatientID,
-		BedID:     bed.ID,
+		BedID:     input.BedID,
+		Reason:    input.Reason,
 		Status:    "ACTIVE",
 	}
 
@@ -70,7 +72,7 @@ func AdmitPatient(c *gin.Context) {
 		return
 	}
 
-	// Update bed status to OCCUPIED
+	// Update bed status
 	if err := tx.Model(&bed).Update("status", "OCCUPIED").Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update bed"})
@@ -100,44 +102,76 @@ func DischargePatient(c *gin.Context) {
 		return
 	}
 
-	// Only active admissions can be discharged
+	// Check if already discharged
 	if admission.Status != "ACTIVE" {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Already discharged"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Patient already discharged"})
 		return
 	}
 
 	// Update admission
 	now := time.Now()
+
 	admission.Status = "DISCHARGED"
 	admission.DischargedAt = &now
 
-	tx.Save(&admission)
+	if err := tx.Save(&admission).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update admission"})
+		return
+	}
 
-	// Free bed
+	// Find bed
 	var bed models.Bed
-	tx.First(&bed, admission.BedID)
-	tx.Model(&bed).Update("status", "CLEANING")
+	if err := tx.First(&bed, admission.BedID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Bed not found"})
+		return
+	}
+
+	// Set bed to CLEANING
+	if err := tx.Model(&bed).Update("status", "CLEANING").Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update bed"})
+		return
+	}
 
 	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Patient discharged successfully",
+		"message":   "Patient discharged successfully",
+		"bedStatus": "CLEANING",
 	})
 }
 
 func GetAdmissions(c *gin.Context) {
+
 	var admissions []models.Admission
-	config.DB.Find(&admissions)
+
+	config.DB.
+		Preload("Patient").
+		Preload("Bed").
+		Preload("Bed.Room").
+		Preload("Bed.Room.Ward").
+		Find(&admissions)
 
 	c.JSON(http.StatusOK, admissions)
 }
 
 func GetAdmissionByID(c *gin.Context) {
+
 	admissionID := c.Param("admission_id")
 
 	var admission models.Admission
-	if err := config.DB.First(&admission, admissionID).Error; err != nil {
+
+	err := config.DB.
+		Preload("Patient").
+		Preload("Bed").
+		Preload("Bed.Room").
+		Preload("Bed.Room.Ward").
+		First(&admission, admissionID).Error
+
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Admission details not found"})
 		return
 	}
