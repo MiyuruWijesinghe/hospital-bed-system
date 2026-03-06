@@ -30,7 +30,7 @@ func CreateRoom(c *gin.Context) {
 func GetRooms(c *gin.Context) {
 	var rooms []models.Room
 
-	config.DB.Preload("Ward").Find(&rooms)
+	config.DB.Preload("Ward").Preload("Beds").Find(&rooms)
 
 	c.JSON(http.StatusOK, rooms)
 }

@@ -9,4 +9,5 @@ type Room struct {
 	RoomNumber string `gorm:"size:20;not null"`
 	RoomType   string `gorm:"size:50"` // PRIVATE / SHARED
 	CreatedAt  time.Time
+	Beds       []Bed `gorm:"foreignKey:RoomID"`
 }

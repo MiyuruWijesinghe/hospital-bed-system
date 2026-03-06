@@ -12,20 +12,26 @@ type WardSummary struct {
 }
 
 type HospitalSummary struct {
-	TotalBeds int64
-	Available int64
-	Occupied  int64
-	Cleaning  int64
+	TotalWards       int64
+	TotalRooms       int64
+	TotalBeds        int64
+	AvailableBeds    int64
+	OccupiedBeds     int64
+	CleaningBeds     int64
+	ActiveAdmissions int64
 }
 
 func GetHospitalSummary() (HospitalSummary, error) {
 
 	var summary HospitalSummary
 
+	config.DB.Table("wards").Count(&summary.TotalWards)
+	config.DB.Table("rooms").Count(&summary.TotalRooms)
 	config.DB.Table("beds").Count(&summary.TotalBeds)
-	config.DB.Table("beds").Where("status = ?", "AVAILABLE").Count(&summary.Available)
-	config.DB.Table("beds").Where("status = ?", "OCCUPIED").Count(&summary.Occupied)
-	config.DB.Table("beds").Where("status = ?", "CLEANING").Count(&summary.Cleaning)
+	config.DB.Table("beds").Where("status = ?", "AVAILABLE").Count(&summary.AvailableBeds)
+	config.DB.Table("beds").Where("status = ?", "OCCUPIED").Count(&summary.OccupiedBeds)
+	config.DB.Table("beds").Where("status = ?", "CLEANING").Count(&summary.CleaningBeds)
+	config.DB.Table("admissions").Where("status = ?", "ACTIVE").Count(&summary.ActiveAdmissions)
 
 	return summary, nil
 }
