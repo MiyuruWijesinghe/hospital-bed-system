@@ -41,10 +41,11 @@ func CreatePatient(c *gin.Context) {
 }
 
 func GetPatients(c *gin.Context) {
+
 	var patients []models.Patient
 	config.DB.Find(&patients)
 
-	var response []responses.PatientResponse
+	response := []responses.PatientResponse{}
 
 	for _, p := range patients {
 		response = append(response, utils.MapPatientToResponse(p))
