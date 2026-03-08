@@ -49,6 +49,15 @@ func GetBedsByRoom(c *gin.Context) {
 	c.JSON(http.StatusOK, beds)
 }
 
+func GetBedsByStatus(c *gin.Context) {
+	status := c.Param("status")
+
+	var beds []models.Bed
+	config.DB.Preload("Room").Preload("Room.Ward").Where("status = ?", status).Find(&beds)
+
+	c.JSON(http.StatusOK, beds)
+}
+
 func UpdateBedStatus(c *gin.Context) {
 	bedID := c.Param("bed_id")
 
