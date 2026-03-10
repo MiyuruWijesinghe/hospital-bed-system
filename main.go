@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+
 	r := gin.Default()
 
 	config.ConnectDatabase()
